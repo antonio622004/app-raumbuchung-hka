@@ -1,3 +1,70 @@
-<h1>Meine App</h1>
+<h1>Besprechungsraum buchen</h1>
 
-<p class="lead">Hier entsteht Ihre Anwendung.</p>
+<p class="lead">Heute ist {{ today }}. Wählen Sie einen freien Raum und klicken Sie auf „Buchen“.</p>
+
+{% if message %}
+<div class="notice{% if message[0] == 'warn' %} notice--warn{% endif %}" role="status">
+  <p>{{ message[1] }}</p>
+</div>
+{% endif %}
+
+<p>
+  {% if free_count == 0 %}Heute ist kein Raum mehr frei.
+  {% elif free_count == 1 %}Heute ist noch 1 Zeitfenster frei.
+  {% else %}Heute sind noch {{ free_count }} Zeitfenster frei.{% endif %}
+  {% for slot in slots %}{{ slot.label }}: {{ slot.times }}.{% if not loop.last %} {% endif %}{% endfor %}
+</p>
+
+<div class="table-wrap" role="region" aria-labelledby="rooms-caption" tabindex="0">
+  <table class="table rooms">
+    <caption id="rooms-caption">Besprechungsräume heute</caption>
+    <thead>
+      <tr>
+        <th scope="col">Raum</th>
+        {% for slot in slots %}
+        <th scope="col">{{ slot.label }} <span class="muted small">({{ slot.times }})</span></th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <th scope="row">{{ row.room }}</th>
+        {% for cell in row.cells %}
+        <td>
+          {% if cell.state == "free" %}
+          <form method="post" action="{{ book_url }}" class="rooms__action">
+            <input type="hidden" name="raum" value="{{ row.room }}">
+            <input type="hidden" name="zeit" value="{{ cell.slot.key }}">
+            <span class="badge">Frei</span>
+            <button type="submit" class="btn btn--primary">Buchen<span class="visually-hidden">: Raum {{ row.room }}, {{ cell.slot.label }}</span></button>
+          </form>
+          {% elif cell.state == "mine" %}
+          <form id="cancel-{{ cell.id }}" method="post" action="{{ cancel_url }}" class="rooms__action">
+            <input type="hidden" name="raum" value="{{ row.room }}">
+            <input type="hidden" name="zeit" value="{{ cell.slot.key }}">
+            <span class="badge">Von Ihnen gebucht</span>
+            <button type="button" class="btn btn--secondary" data-dialog-open="confirm-{{ cell.id }}">Stornieren …<span class="visually-hidden"> Raum {{ row.room }}, {{ cell.slot.label }}</span></button>
+          </form>
+          <dialog id="confirm-{{ cell.id }}" aria-labelledby="confirm-{{ cell.id }}-title" data-submit-form="cancel-{{ cell.id }}">
+            <form method="dialog">
+              <h2 id="confirm-{{ cell.id }}-title">Buchung für Raum {{ row.room }} stornieren?</h2>
+              <p>Ihre Buchung für {{ cell.slot.label }} ({{ cell.slot.times }}) wird gelöscht. Danach können andere den Raum buchen.</p>
+              <div class="dialog__actions">
+                <button value="cancel" class="btn btn--secondary">Abbrechen</button>
+                <button value="confirm" class="btn btn--primary" autofocus>Stornieren</button>
+              </div>
+            </form>
+          </dialog>
+          {% elif cell.state == "taken" %}
+          <span class="muted">Belegt</span>
+          {% else %}
+          <span class="muted">Vorbei</span>
+          {% endif %}
+        </td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
