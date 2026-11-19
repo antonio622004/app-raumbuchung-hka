@@ -1,17 +1,20 @@
 """Testumgebung: Betriebsmodus mit festem Testschlüssel statt echtem Portal."""
 
 import os
+import tempfile
 import time
 
 os.environ.pop("PORTAL_DEV", None)
 os.environ["PORTAL_ENV"] = "test"
 os.environ["PORTAL_ISSUER"] = "https://portal.test/"
+os.environ["DATA_DIR"] = tempfile.mkdtemp(prefix="raumbuchung-test-")
 
 import jwt
 import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi.testclient import TestClient
 
+from app.bookings import BookingStore
 from app.main import app, portal
 from platform_sdk.jwks import JwksCache
 
@@ -37,9 +40,15 @@ def make_token(**overrides) -> str:
 
 @pytest.fixture
 def client() -> TestClient:
+    BookingStore.from_env().clear()
     return TestClient(app)
 
 
 @pytest.fixture
 def as_student():
     return {"X-Portal-Assertion": make_token(), "Accept": "text/html"}
+
+
+@pytest.fixture
+def as_employee():
+    return {"X-Portal-Assertion": make_token(sub="test-employee", roles=["employee"]), "Accept": "text/html"}

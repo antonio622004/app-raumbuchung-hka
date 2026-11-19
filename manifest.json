@@ -1,8 +1,8 @@
 {
   "slug": "raumbuchung-hka",
-  "name": "Meine App",
+  "name": "Raumbuchung",
   "category": "Sonstiges",
-  "menu": { "label": "Meine App", "icon": "info" },
-  "roles": ["student"],
+  "menu": { "label": "Raum buchen", "icon": "room" },
+  "roles": ["student", "employee", "professor"],
   "version": "0.1.0"
 }
